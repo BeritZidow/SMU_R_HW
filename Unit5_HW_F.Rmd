@@ -1,0 +1,114 @@
+---
+title: "Unit5 HW"
+author: "Berit"
+date: "February 12, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown HW 5
+
+
+
+```{r read2016}
+fileName <- "C:/Projects/SMU_R_HW/data/yob2016.txt"
+# all read in with semicolon separater
+yob2016_df <- read.table(fileName, header= FALSE, stringsAsFactors=FALSE, sep =";")
+dim(yob2016_df)
+summary(yob2016_df)
+head(yob2016_df)
+```
+
+
+```{r namevars}
+# name the variables
+colnames(yob2016_df) <- c("gName", "sex", "cnt")
+head(yob2016_df)
+```
+
+
+```{r cleanup}
+# find bad name with yyy at end
+grep("yyy$", yob2016_df$gName, value = TRUE)
+grep("yyy$", yob2016_df$gName)
+
+#delete the 212 observation per client 
+y2016_df <- yob2016_df[-212,]  # DO NOT RERUN
+```
+
+```{r read2015}
+# Read in 2015 data, use comma as separater
+fileName <- "C:/Projects/SMU_R_HW/data/yob2015.txt"
+y2015_df <- read.table(fileName, header= FALSE, stringsAsFactors=FALSE, sep =",")
+
+#read last 10 lines
+tail(y2015_df)
+# last observations consist of all males names
+```
+
+```{r namevars2}
+# Name the columns in 2015 dataframe
+colnames(y2015_df) <- c("gName", "sex", "cnt")
+summary(y2015_df)
+```
+
+```{r checkMales}
+#check both files for male counts
+y2015_Sex <- with(y2015_df,data.frame(model.matrix(~sex-1,y2015_df), gName, cnt))
+tail(y2015_Sex)
+y2016_Sex <- with(y2016_df,data.frame(model.matrix(~sex-1,y2016_df), gName, cnt))
+
+sum(y2015_Sex$sexM)
+sum(y2016_Sex$sexM)
+
+```
+
+```{r mergeFiles}
+# Merge 2015 and 2016 files
+final_df <-merge(y2015_df,y2016_df, by="gName")
+colnames(final_df) <- c("gName", "sex2015", "cnt2015", "sex2016", "cnt2016")
+head(final_df)
+
+# completeness check
+# list rows of data that have missing values 
+final_df[!complete.cases(final_df),]
+# all rows are complete
+```
+
+```{r totalCol}
+# add a total count column
+final_df$TotCnt <- final_df$cnt2015 + final_df$cnt2016
+```
+
+```{r quickSort}
+# Sorted Output Desc
+SortedDescFinal <- final_df[order(final_df$TotCnt),]
+# top 10
+tail(SortedDescFinal, 10)
+```
+
+```{r removeMales}
+#delete male obs
+# remove the male obs
+#grep("M", SortedDescFinal$sex2015, value = TRUE) #validate
+males <- grep("M", SortedDescFinal$sex2015)
+y2016Girls_df <- SortedDescFinal[-(males),]
+#tail(y2016Girls_df, 10)  # validate
+#set to ascending order
+SortedAscFinal <- y2016Girls_df[order(y2016Girls_df$TotCnt, decreasing=TRUE),]
+head(SortedAscFinal, 10)
+#remove columns 
+keeps <- c("gName", "TotCnt")
+SortedAscFinal <- SortedAscFinal[keeps]
+```
+
+```{r createFinal}
+# write out name and count to file
+# Write to csv file w/o row labels
+write.csv(head(SortedAscFinal, 10), file = "data/TopGirlsNames.csv",row.names=FALSE)
+```
+
+# https://github.com/BeritZidow/SMU_R_HW
